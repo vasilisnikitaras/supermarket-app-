@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 64, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/Fanene%20WorkStation/Desktop/supermarket-app/src/app/api/products/route.ts"],"sourcesContent":["import { NextResponse } from \"next/server\";\r\nimport { PrismaClient } from \"@prisma/client\";\r\n\r\nconst prisma = new PrismaClient();\r\n\r\n// GET: Επιστρέφει όλα τα προϊόντα από τη βάση\r\nexport async function GET() {\r\n  const products = await prisma.product.findMany();\r\n  return NextResponse.json(products);\r\n}\r\n\r\n// POST: Δημιουργεί νέο προϊόν στη βάση\r\nexport async function POST(req: Request) {\r\n  const data = await req.json();\r\n\r\n  const product = await prisma.product.create({\r\n    data: {\r\n      name: data.name,\r\n      price: data.price,\r\n    },\r\n  });\r\n\r\n  return NextResponse.json(product);\r\n}\r\n"],"names":["prisma","GET","products","product","findMany","json","POST","req","data","create","name","price"],"mappings":";;;;;;AAAA;AACA;;;AAEA,MAAMA,SAAS,IAAI,sMAAY;AAGxB,eAAeC;IACpB,MAAMC,WAAW,MAAMF,OAAOG,OAAO,CAACC,QAAQ;IAC9C,OAAO,gJAAY,CAACC,IAAI,CAACH;AAC3B;AAGO,eAAeI,KAAKC,GAAY;IACrC,MAAMC,OAAO,MAAMD,IAAIF,IAAI;IAE3B,MAAMF,UAAU,MAAMH,OAAOG,OAAO,CAACM,MAAM,CAAC;QAC1CD,MAAM;YACJE,MAAMF,KAAKE,IAAI;YACfC,OAAOH,KAAKG,KAAK;QACnB;IACF;IAEA,OAAO,gJAAY,CAACN,IAAI,CAACF;AAC3B"}}]
+}

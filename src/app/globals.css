@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* ΠΑΓΚΟΣΜΙΑ ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟΥΣ ΠΙΝΑΚΕΣ ΣΤΟ DARK MODE */
+.bg-gray-900 table {
+  border-color: #374151 !important; /* Σκούρο περίγραμμα για τον πίνακα */
+}
+
+/* Φτιάχνει την επικεφαλίδα του πίνακα (th) στο Dark Mode */
+.bg-gray-900 thead tr,
+.bg-gray-900 tr.bg-gray-100,
+.bg-gray-900 tr[className*="bg-gray-100"] {
+  background-color: #1f2937 !important; /* Σκούρο γκρι φόντο στην επικεφαλίδα (αντί για λευκό) */
+  color: #ffffff !important; /* Λευκά γράμματα */
+}
+
+.bg-gray-900 th {
+  background-color: #1f2937 !important;
+  color: #ffffff !important;
+  border-color: #374151 !important;
+}
+
+/* Φτιάχνει τις γραμμές των δεδομένων (td) του πίνακα στο Dark Mode */
+.bg-gray-900 td {
+  border-color: #374151 !important; /* Σκούρα περιγράμματα στα κελιά */
+  color: #e5e7eb !important; /* Αχνό λευκό κείμενο για τα δεδομένα */
+}

@@ -1,0 +1,81 @@
+datasource db {
+  provider = "postgresql" // ΑΛΛΑΧΘΗΚΕ: Έτοιμο για το Neon DB σας
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Shop {
+  id        Int        @id @default(autoincrement())
+  name      String     // Όνομα μαγαζιού (π.χ. "VNF Market")
+  createdAt DateTime   @default(now())
+  users     User[]
+  products  Product[]  // Σύνδεση: Κάθε μαγαζί έχει τα δικά του προϊόντα
+  suppliers Supplier[] // Σύνδεση: Κάθε μαγαζί έχει τους δικούς του προμηθευτές
+  orders    Order[]    // Σύνδεση: Κάθε μαγαζί έχει τις δικές του παραγγελίες
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String   // Κρυπτογραφημένος κωδικός για ασφάλεια
+  role      String   // "ADMIN" (Ιδιοκτήτης) ή "STAFF" (Υπάλληλος)
+  darkMode  Boolean  @default(false) // <-- ΠΡΟΣΤΕΘΗΚΕ: Αποθήκευση Dark Mode ρύθμισης
+  shop      Shop     @relation(fields: [shopId], references: [id])
+  shopId    Int
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id         Int         @id @default(autoincrement())
+  name       String
+  price      Float
+  createdAt  DateTime    @default(now())
+  offers     Offer[]
+  orderItems OrderItem[]
+  shop       Shop        @relation(fields: [shopId], references: [id]) // Σύνδεση με το μαγαζί
+  shopId     Int
+}
+
+model Offer {
+  id         Int      @id @default(autoincrement())
+  discount   String
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  createdAt  DateTime @default(now())
+}
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  orders    Order[]
+  shop      Shop     @relation(fields: [shopId], references: [id]) // Σύνδεση με το μαγαζί
+  shopId    Int
+}
+
+model Order {
+  id         Int         @id @default(autoincrement())
+  supplier   Supplier    @relation(fields: [supplierId], references: [id])
+  supplierId Int
+  items      OrderItem[]
+  total      Float
+  createdAt  DateTime    @default(now())
+  shop       Shop        @relation(fields: [shopId], references: [id]) // Σύνδεση με το μαγαζί
+  shopId     Int
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  price     Float
+}
