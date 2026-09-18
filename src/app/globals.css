@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
-/* ΠΑΓΚΟΣΜΙΑ ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟΥΣ ΠΙΝΑΚΕΣ ΣΤΟ DARK MODE */
-.bg-gray-900 table {
-  border-color: #374151 !important; /* Σκούρο περίγραμμα για τον πίνακα */
+/* ==========================================================================
+   ΠΑΓΚΟΣΜΙΑ ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟΥΣ ΠΙΝΑΚΕΣ ΚΑΙ ΤΑ MODALS ΣΤΟ DARK MODE (Tailwind v4)
+   ========================================================================== */
+
+/* Όταν η εφαρμογή έχει data-theme="dark" ή την κλάση .dark */
+.dark, [data-theme="dark"] {
+  
+  /* 1. Φτιάχνει το μεγάλο εξωτερικό κουτί στη σελίδα Users και Settings */
+  & div.max-w-4xl, 
+  & div.max-w-2xl {
+    background-color: #1f2937 !important; /* Σκούρο γκρι φόντο (bg-gray-800) */
+    color: #ffffff !important; /* Λευκά γράμματα στους τίτλους */
+    border-color: #374151 !important; /* Σκούρο περίγραμμα */
+  }
+
+  /* 2. Φτιάχνει το κείμενο της περιγραφής κάτω από τους τίτλους */
+  & p.text-gray-600 {
+    color: #9ca3af !important; /* Αχνό γκρι κείμενο */
+  }
+
+  /* 3. Φτιάχνει τη δομή όλων των πινάκων (Tables) */
+  & table {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+  }
+
+  /* 4. Φτιάχνει την επικεφαλίδα του πίνακα (th) */
+  & th, 
+  & thead tr {
+    background-color: #111827 !important; /* Πολύ σκούρο γκρι/μαύρο (bg-gray-900) */
+    color: #ffffff !important;
+    border-color: #374151 !important;
+  }
+
+  /* 5. Φτιάχνει τις γραμμές των δεδομένων (td) και το κείμενο "No registered users found" */
+  & td {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #ffffff !important; /* Κάτασπρα γράμματα για να διαβάζονται τέλεια */
+  }
 }
 
-/* Φτιάχνει την επικεφαλίδα του πίνακα (th) στο Dark Mode */
-.bg-gray-900 thead tr,
-.bg-gray-900 tr.bg-gray-100,
-.bg-gray-900 tr[className*="bg-gray-100"] {
-  background-color: #1f2937 !important; /* Σκούρο γκρι φόντο στην επικεφαλίδα (αντί για λευκό) */
-  color: #ffffff !important; /* Λευκά γράμματα */
+/* ==========================================================================
+   🚨 ΔΙΟΡΘΩΘΗΚΕ: ΚΛΕΙΔΩΜΑ DROPDOWNS ΚΑΙ INPUTS ΜΕΣΑ ΣΤΑ MODALS
+   ========================================================================== */
+select, input {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.bg-gray-900 th {
-  background-color: #1f2937 !important;
-  color: #ffffff !important;
-  border-color: #374151 !important;
-}
-
-/* Φτιάχνει τις γραμμές των δεδομένων (td) του πίνακα στο Dark Mode */
-.bg-gray-900 td {
-  border-color: #374151 !important; /* Σκούρα περιγράμματα στα κελιά */
-  color: #e5e7eb !important; /* Αχνό λευκό κείμενο για τα δεδομένα */
+/* Ευθυγράμμιση και εγκλωβισμός των select στοιχείων μέσα στα εσωτερικά παράθυρα */
+.fixed select,
+div[class*="fixed"] select,
+div[class*="bg-white"] select,
+div[class*="bg-gray-800"] select {
+  width: 100% !important;
+  max-width: 80% !important;
+  display: block !important;
+  box-sizing: border-box !important;
 }

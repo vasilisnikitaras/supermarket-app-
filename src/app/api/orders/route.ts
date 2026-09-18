@@ -3,48 +3,48 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// GET all orders
 export async function GET() {
-  const orders = await prisma.order.findMany({
-    include: {
-      supplier: true,
-      items: {
-        include: { product: true }
-      }
-    }
-  });
-
-  return NextResponse.json(orders);
+  try {
+    const orders = await prisma.order.findMany({
+      include: {
+        supplier: true,
+        items: { include: { product: true } }
+      },
+      orderBy: { id: "asc" }
+    });
+    return NextResponse.json(orders);
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
+  }
 }
 
-// POST create order
 export async function POST(req: Request) {
-  const data = await req.json();
+  try {
+    const data = await req.json();
+    const total = data.items.reduce((sum: number, item: any) => sum + (item.quantity * item.price), 0);
 
-  // data = { supplierId, items: [{ productId, quantity, price }] }
-
-  const total = data.items.reduce(
-    (sum: number, item: any) => sum + item.quantity * item.price,
-    0
-  );
-
-  const order = await prisma.order.create({
-    data: {
-      supplierId: data.supplierId,
-      total,
-      items: {
-        create: data.items.map((item: any) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price
-        }))
+    const order = await prisma.order.create({
+      data: {
+        supplierId: Number(data.supplierId),
+        total: Number(total),
+        shopId: 1, // Κλειδώνει live στο κατάστημα 1
+        items: {
+          create: data.items.map((item: any) => ({
+            productId: Number(item.productId),
+            quantity: Number(item.quantity),
+            price: Number(item.price)
+          }))
+        }
+      },
+      include: {
+        supplier: true,
+        items: { include: { product: true } }
       }
-    },
-    include: {
-      supplier: true,
-      items: { include: { product: true } }
-    }
-  });
-
-  return NextResponse.json(order);
+    });
+    return NextResponse.json(order);
+  } catch (error: any) {
+    // 🚨 ΕΚΤΥΠΩΣΗ ΣΦΑΛΜΑΤΟΣ ΓΙΑ ΤΟ TEST
+    console.error("❌ CRITICAL ORDERS ERROR:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

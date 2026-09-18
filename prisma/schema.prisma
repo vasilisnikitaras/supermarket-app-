@@ -23,10 +23,14 @@ model User {
   email     String   @unique
   password  String   // Κρυπτογραφημένος κωδικός για ασφάλεια
   role      String   // "ADMIN" (Ιδιοκτήτης) ή "STAFF" (Υπάλληλος)
-  darkMode  Boolean  @default(false) // <-- ΠΡΟΣΤΕΘΗΚΕ: Αποθήκευση Dark Mode ρύθμισης
+  darkMode  Boolean  @default(false) // Αποθήκευση Dark Mode ρύθμισης
   shop      Shop     @relation(fields: [shopId], references: [id])
   shopId    Int
   createdAt DateTime @default(now())
+
+  // 👑 ΠΡΟΣΤΕΘΗΚΑΝ: Live tracking πεδία για το Neon DB
+  isOnline  Boolean  @default(false)
+  lastSeen  DateTime @default(now())
 }
 
 model Product {
