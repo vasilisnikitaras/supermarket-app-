@@ -1,160 +1,82 @@
 "use client";
-
 import { useEffect, useState } from "react";
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false); // Pop-up για το Cancel
-
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Load products
   useEffect(() => {
-    fetch("/api/products")
-      .then((res) => res.json())
-      .then(setProducts)
-      .catch(() => setProducts([]));
+    setUserRole(localStorage.getItem("userRole"));
+    fetch("/api/products").then((res) => res.json()).then((data) => setProducts(Array.isArray(data) ? data : [])).catch(() => setProducts([]));
   }, []);
 
-  // Create product
   const createProduct = async () => {
     if (!name || !price) return;
-
     const res = await fetch("/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        price: Number(price),
-      }),
+      body: JSON.stringify({ name, price: Number(price), shopId: 1 }),
     });
-
     if (res.ok) {
-      const newProduct = await res.json();
-      setProducts([...products, newProduct]);
+      const newProd = await res.json();
+      setProducts([...products, newProd]);
       setShowModal(false);
-      setName("");
-      setPrice("");
+      setName(""); setPrice("");
     }
   };
 
-  // Λειτουργία όταν ο χρήστης πατάει Cancel
-  const handleCancelClick = () => {
-    // Αν έχει γράψει όνομα ή τιμή, τον ρωτάμε με Pop-up για σιγουριά
-    if (name || price) {
-      setShowCancelConfirm(true);
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setProducts(products.filter((p) => p.id !== id));
     } else {
-      setShowModal(false);
+      alert("Cannot delete product. It might be linked to an order!");
     }
   };
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Products</h1>
-
-      <button
-        onClick={() => setShowModal(true)}
-        className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700 transition-colors"
-      >
-        Create Product
-      </button>
-
-      {/* Products Table */}
-      <table className="w-full mt-6 border border-collapse border-gray-200 dark:border-gray-700">
-        <thead>
-          <tr className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">ID</th>
-            <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Name</th>
-            <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Price</th>
-            <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Created</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((p: any) => (
-            <tr key={p.id} className="border-b border-gray-200 dark:border-gray-700">
-              <td className="p-2 border border-gray-200 dark:border-gray-700">{p.id}</td>
-              <td className="p-2 border border-gray-200 dark:border-gray-700">{p.name}</td>
-              <td className="p-2 border border-gray-200 dark:border-gray-700">${Number(p.price).toFixed(2)}</td>
-              <td className="p-2 border border-gray-200 dark:border-gray-700">
-                {new Date(p.createdAt).toLocaleDateString()}
-              </td>
+      <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer">Create Product</button>
+      <div className="w-full overflow-x-auto">
+        <table className="w-full mt-6 border border-collapse border-gray-200 dark:border-gray-700">
+          <thead>
+            <tr className="bg-gray-100 dark:bg-gray-800">
+              <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">ID</th>
+              <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Name</th>
+              <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Price</th>
+              {userRole === "ADMIN" && <th className="p-2 border border-gray-200 dark:border-gray-700 text-center">Actions</th>}
             </tr>
-          ))}
-          {products.length === 0 && (
-            <tr>
-              <td colSpan={4} className="p-4 text-center text-gray-500 dark:text-gray-400">No products found.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {products.map((p: any) => (
+              <tr key={p.id} className="border-b border-gray-200 dark:border-gray-700">
+                <td className="p-2 border border-gray-200 dark:border-gray-700">{p.id}</td>
+                <td className="p-2 border border-gray-200 dark:border-gray-700">{p.name}</td>
+                <td className="p-2 border border-gray-200 dark:border-gray-700">\${Number(p.price).toFixed(2)}</td>
+                {userRole === "ADMIN" && (
+                  <td className="p-2 border border-gray-200 dark:border-gray-700 text-center">
+                    <button onClick={() => handleDelete(p.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer">Delete</button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-      {/* Main Modal για Create Product */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          {/* ΔΙΟΡΘΩΘΗΚΕ: Προσθήκη dark:bg-gray-800 και dark:text-white */}
-          <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-6 rounded shadow-xl w-[400px]">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-6 rounded shadow-xl w-full max-w-[400px]">
             <h2 className="text-xl font-bold mb-4">Create Product</h2>
-
-            <input
-              type="text"
-              placeholder="Product name"
-              className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 placeholder-gray-400"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-
-            <input
-              type="number"
-              placeholder="Price"
-              className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 placeholder-gray-400"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-
-            <button
-              onClick={createProduct}
-              className="bg-blue-600 text-white px-4 py-2 rounded w-full font-bold hover:bg-blue-700 transition-colors"
-            >
-              Save Product
-            </button>
-
-            <button
-              onClick={handleCancelClick}
-              className="mt-3 text-gray-500 dark:text-gray-400 hover:underline w-full text-center text-sm font-medium transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 🚨 Pop-up Επιβεβαίωσης για το Cancel */}
-      {showCancelConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
-          <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-6 rounded-lg shadow-2xl w-[350px] border border-gray-200 dark:border-gray-700 text-center">
-            <h3 className="text-lg font-bold mb-2">Are you sure?</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">You will lose all inputted data for this product.</p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => {
-                  setShowCancelConfirm(false);
-                  setShowModal(false); // Κλείνει οριστικά το modal
-                  setName("");
-                  setPrice("");
-                }}
-                className="bg-red-500 text-white px-4 py-2 rounded font-semibold hover:bg-red-600 transition-colors"
-              >
-                Yes, Cancel
-              </button>
-              <button
-                onClick={() => setShowCancelConfirm(false)}
-                className="bg-gray-200 dark:bg-gray-700 text-black dark:text-white px-4 py-2 rounded font-semibold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                No, Keep
-              </button>
-            </div>
+            <input type="text" placeholder="Name" className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={name} onChange={(e) => setName(e.target.value)} />
+            <input type="number" placeholder="Price" className="border p-2 w-full mb-4 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <button onClick={createProduct} className="bg-blue-600 text-white px-4 py-2 rounded w-full font-bold cursor-pointer">Save Product</button>
+            <button onClick={() => setShowModal(false)} className="mt-3 text-gray-500 w-full text-center text-sm cursor-pointer">Cancel</button>
           </div>
         </div>
       )}

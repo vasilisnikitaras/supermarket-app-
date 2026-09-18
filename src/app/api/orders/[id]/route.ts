@@ -3,69 +3,33 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// GET one order
-export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  const order = await prisma.order.findUnique({
-    where: { id: Number(params.id) },
-    include: {
-      supplier: true,
-      items: { include: { product: true } }
-    }
-  });
-
-  return NextResponse.json(order);
-}
-
-// PUT update order
-export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  const data = await req.json();
-
-  const total = data.items.reduce(
-    (sum: number, item: any) => sum + item.quantity * item.price,
-    0
-  );
-
-  // Delete old items
-  await prisma.orderItem.deleteMany({
-    where: { orderId: Number(params.id) }
-  });
-
-  const updated = await prisma.order.update({
-    where: { id: Number(params.id) },
-    data: {
-      supplierId: data.supplierId,
-      total,
-      items: {
-        create: data.items.map((item: any) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price
-        }))
-      }
-    },
-    include: {
-      supplier: true,
-      items: { include: { product: true } }
-    }
-  });
-
-  return NextResponse.json(updated);
-}
-
-// DELETE order
+// DELETE: Διαγραφή παραγγελίας και όλων των order items της
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  await prisma.order.delete({
-    where: { id: Number(params.id) }
-  });
+  try {
+    // 👑 ΣΩΣΤΟ NEXT.JS 16 AWAIT PARAMS
+    const resolvedParams = await params;
+    const orderId = Number(resolvedParams.id);
 
-  return NextResponse.json({ message: "Deleted" });
+    if (isNaN(orderId)) {
+      return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+    }
+
+    // 🔥 ΣΗΜΑΝΤΙΚΟ ΓΙΑ POSTGRES: Σβήνουμε πρώτα τα OrderItems λόγω Foreign Key!
+    await prisma.orderItem.deleteMany({
+      where: { orderId: orderId },
+    });
+
+    // 2. Μετά σβήνουμε την ίδια την Παραγγελία
+    await prisma.order.delete({
+      where: { id: orderId },
+    });
+
+    return NextResponse.json({ message: "Order deleted successfully" });
+  } catch (error: any) {
+    console.error("❌ ORDERS DELETE ERROR:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }

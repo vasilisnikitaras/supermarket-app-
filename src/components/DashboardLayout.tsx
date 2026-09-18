@@ -8,10 +8,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [locale, setLocale] = useState<"en" | "el" | "fr">("en");
   const [open, setOpen] = useState(false); 
   const [darkMode, setDarkMode] = useState(false); 
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  // 1. Ανίχνευση Γλώσσας και Θέματος κατά το φόρτωμα
+  // 1. Ανίχνευση Γλώσσας, Θέματος και Έλεγχος Ασφάλειας (Auth Guard)
   useEffect(() => {
-    if (typeof window !== "undefined" && typeof navigator !== "undefined") {
+    if (typeof window !== "undefined") {
+      // 🔒 AUTH GUARD: Έλεγχος αν υπάρχει συνδεδεμένος χρήστης
+      const role = localStorage.getItem("userRole");
+      
+      // Αν είμαστε στη σελίδα login, επιτρέπουμε την πρόσβαση χωρίς redirect
+      if (window.location.pathname === "/login") {
+        setLoading(false);
+        return;
+      }
+
+      // Αν δεν υπάρχει ρόλος, κλειδώνουμε την εφαρμογή και πετάμε τον χρήστη στο Login
+      if (!role) {
+        window.location.href = "/login";
+        return;
+      }
+
+      setUserRole(role);
+
       // Ανίχνευση γλώσσας
       const lang = navigator.language;
       if (lang.startsWith("el")) setLocale("el");
@@ -22,24 +41,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       const savedTheme = localStorage.getItem("theme");
       if (savedTheme === "dark") {
         setDarkMode(true);
-        document.documentElement.classList.add("dark"); // Ενεργοποιεί το Dark Mode στον browser
+        document.documentElement.setAttribute("data-theme", "dark");
+        document.documentElement.classList.add("dark");
       } else {
+        document.documentElement.setAttribute("data-theme", "light");
         document.documentElement.classList.remove("dark");
       }
+      setLoading(false);
     }
   }, []);
 
-  // 2. Λειτουργία αλλαγής θέματος (Toggle) που επηρεάζει όλο τον browser
+  // 2. Λειτουργία αλλαγής θέματος (Toggle)
   const toggleDarkMode = () => {
     if (darkMode) {
       localStorage.setItem("theme", "light");
-      document.documentElement.classList.remove("dark"); // Σβήνει το dark από τον browser
+      document.documentElement.removeAttribute("data-theme");
+      document.documentElement.classList.remove("dark");
       setDarkMode(false);
     } else {
       localStorage.setItem("theme", "dark");
-      document.documentElement.classList.add("dark"); // Επιβάλλει το dark στον browser
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.classList.add("dark");
       setDarkMode(true);
     }
+  };
+
+  // 🚪 Λειτουργία Logout που καθαρίζει το Session και σε κλειδώνει έξω
+  const handleLogout = () => {
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userId");
+    sessionStorage.clear();
+    window.location.href = "/login";
   };
 
   const labels = {
@@ -81,6 +114,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     },
   };
 
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-black dark:text-white">Loading App...</div>;
+  }
+
+  // Αν είμαστε στη σελίδα login, επιστρέφουμε σκέτο το περιεχόμενο χωρίς τη sidebar
+  if (typeof window !== "undefined" && window.location.pathname === "/login") {
+    return <>{children}</>;
+  }
+
   const t = labels[locale];
 
   return (
@@ -93,7 +135,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className={`fixed top-0 left-0 h-full border-r w-64 p-4 z-50 transition-all duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0 md:static md:h-screen md:sticky ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200"
+          darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-100 border-gray-200 text-black"
         }`}
       >
         <div className="flex justify-between items-center mb-6">
@@ -107,25 +149,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav className="flex flex-col gap-3">
-          <Link href="/" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
+          <Link href="/" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
             {t.dashboard}
           </Link>
-          <Link href="/products" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
+          <Link href="/products" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
             {t.products}
           </Link>
-          <Link href="/suppliers" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
+          <Link href="/suppliers" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
             {t.suppliers}
           </Link>
-          <Link href="/offers" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
+          <Link href="/offers" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
             {t.offers}
           </Link>
-          <Link href="/orders" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
+          <Link href="/orders" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
             {t.orders}
           </Link>
-          <Link href="/users" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
-            {t.users}
-          </Link>
-          <Link href="/settings" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`}>
+          
+          {/* 👥 ΕΛΕΓΧΟΣ: Μόνο ο Admin βλέπει το κουμπί Users στο μενού */}
+          {userRole === "ADMIN" && (
+            <Link href="/users" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
+              {t.users}
+            </Link>
+          )}
+
+          <Link href="/settings" onClick={() => setOpen(false)} className={`p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`}>
             {t.settings}
           </Link>
 
@@ -140,13 +187,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {darkMode ? t.lightMode : t.darkMode}
           </button>
 
+          {/* 👑 ΔΙΟΡΘΩΘΗΚΕ: Το κουμπί καλεί πλέον τηhandleLogout για σωστή αποσύνδεση */}
           <button 
-            onClick={() => {
-              localStorage.clear();
-              sessionStorage.clear();
-              window.location.href = "/";
-            }}
-            className="mt-2 p-2 bg-red-500 text-white rounded cursor-pointer hover:bg-red-600 transition-colors text-center font-semibold"
+            onClick={handleLogout}
+            className="mt-2 p-2 bg-red-500 text-white rounded cursor-pointer hover:bg-red-600 transition-colors text-center font-semibold text-base"
           >
             {t.logout}
           </button>
@@ -165,11 +209,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <header className={`border-b p-4 flex items-center justify-between sticky top-0 z-30 transition-colors ${
-          darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"
+          darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-black"
         }`}>
           <button
             className={`md:hidden p-2 border rounded shadow-sm ${
-              darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-200"
+              darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-200 text-black"
             }`}
             onClick={() => setOpen(!open)}
           >

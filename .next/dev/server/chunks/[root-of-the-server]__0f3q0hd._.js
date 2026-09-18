@@ -74,18 +74,41 @@ var __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client__$5b$ex
 ;
 const prisma = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client__$5b$external$5d$__$2840$prisma$2f$client$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["PrismaClient"]();
 async function GET() {
-    const products = await prisma.product.findMany();
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(products);
+    try {
+        const products = await prisma.product.findMany({
+            orderBy: {
+                id: "asc"
+            }
+        });
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(products);
+    } catch (error) {
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            error: "Failed to fetch products"
+        }, {
+            status: 500
+        });
+    }
 }
 async function POST(req) {
-    const data = await req.json();
-    const product = await prisma.product.create({
-        data: {
-            name: data.name,
-            price: data.price
-        }
-    });
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(product);
+    try {
+        const data = await req.json();
+        const product = await prisma.product.create({
+            data: {
+                name: data.name,
+                price: Number(data.price),
+                shopId: 1
+            }
+        });
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(product);
+    } catch (error) {
+        // 🚨 ΑΥΤΟ ΘΑ ΜΑΣ ΔΕΙΞΕΙ ΤΗΝ ΑΛΗΘΕΙΑ ΣΤΟ POWERSHELL ΑΝ ΑΠΟΤΥΧΕΙ!
+        console.error("❌ CRITICAL PRISMA PRODUCT ERROR:", error.message);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            error: error.message
+        }, {
+            status: 500
+        });
+    }
 }
 }),
 ];

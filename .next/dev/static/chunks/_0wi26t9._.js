@@ -2624,10 +2624,25 @@ function DashboardLayout({ children }) {
     const [locale, setLocale] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("en");
     const [open, setOpen] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     const [darkMode, setDarkMode] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
-    // 1. Ανίχνευση Γλώσσας και Θέματος κατά το φόρτωμα
+    const [loading, setLoading] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [userRole, setUserRole] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
+    // 1. Ανίχνευση Γλώσσας, Θέματος και Έλεγχος Ασφάλειας (Auth Guard)
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "DashboardLayout.useEffect": ()=>{
-            if (("TURBOPACK compile-time value", "object") !== "undefined" && typeof navigator !== "undefined") {
+            if ("TURBOPACK compile-time truthy", 1) {
+                // 🔒 AUTH GUARD: Έλεγχος αν υπάρχει συνδεδεμένος χρήστης
+                const role = localStorage.getItem("userRole");
+                // Αν είμαστε στη σελίδα login, επιτρέπουμε την πρόσβαση χωρίς redirect
+                if (window.location.pathname === "/login") {
+                    setLoading(false);
+                    return;
+                }
+                // Αν δεν υπάρχει ρόλος, κλειδώνουμε την εφαρμογή και πετάμε τον χρήστη στο Login
+                if (!role) {
+                    window.location.href = "/login";
+                    return;
+                }
+                setUserRole(role);
                 // Ανίχνευση γλώσσας
                 const lang = navigator.language;
                 if (lang.startsWith("el")) setLocale("el");
@@ -2637,24 +2652,37 @@ function DashboardLayout({ children }) {
                 const savedTheme = localStorage.getItem("theme");
                 if (savedTheme === "dark") {
                     setDarkMode(true);
-                    document.documentElement.classList.add("dark"); // Ενεργοποιεί το Dark Mode στον browser
+                    document.documentElement.setAttribute("data-theme", "dark");
+                    document.documentElement.classList.add("dark");
                 } else {
+                    document.documentElement.setAttribute("data-theme", "light");
                     document.documentElement.classList.remove("dark");
                 }
+                setLoading(false);
             }
         }
     }["DashboardLayout.useEffect"], []);
-    // 2. Λειτουργία αλλαγής θέματος (Toggle) που επηρεάζει όλο τον browser
+    // 2. Λειτουργία αλλαγής θέματος (Toggle)
     const toggleDarkMode = ()=>{
         if (darkMode) {
             localStorage.setItem("theme", "light");
-            document.documentElement.classList.remove("dark"); // Σβήνει το dark από τον browser
+            document.documentElement.removeAttribute("data-theme");
+            document.documentElement.classList.remove("dark");
             setDarkMode(false);
         } else {
             localStorage.setItem("theme", "dark");
-            document.documentElement.classList.add("dark"); // Επιβάλλει το dark στον browser
+            document.documentElement.setAttribute("data-theme", "dark");
+            document.documentElement.classList.add("dark");
             setDarkMode(true);
         }
+    };
+    // 🚪 Λειτουργία Logout που καθαρίζει το Session και σε κλειδώνει έξω
+    const handleLogout = ()=>{
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userId");
+        sessionStorage.clear();
+        window.location.href = "/login";
     };
     const labels = {
         en: {
@@ -2694,12 +2722,32 @@ function DashboardLayout({ children }) {
             darkMode: "🌙 Mode Sombre"
         }
     };
+    if (loading) {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            className: "min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 text-black dark:text-white",
+            children: "Loading App..."
+        }, void 0, false, {
+            fileName: "[project]/src/components/DashboardLayout.tsx",
+            lineNumber: 118,
+            columnNumber: 12
+        }, this);
+    }
+    // Αν είμαστε στη σελίδα login, επιστρέφουμε σκέτο το περιεχόμενο χωρίς τη sidebar
+    if (("TURBOPACK compile-time value", "object") !== "undefined" && window.location.pathname === "/login") {
+        return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+            children: children
+        }, void 0, false, {
+            fileName: "[project]/src/components/DashboardLayout.tsx",
+            lineNumber: 123,
+            columnNumber: 12
+        }, this);
+    }
     const t = labels[locale];
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: `min-h-screen flex flex-col md:flex-row relative transition-colors duration-200 ${darkMode ? "bg-gray-900 text-white" : "bg-white text-black"}`,
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("aside", {
-                className: `fixed top-0 left-0 h-full border-r w-64 p-4 z-50 transition-all duration-300 ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:h-screen md:sticky ${darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-100 border-gray-200"}`,
+                className: `fixed top-0 left-0 h-full border-r w-64 p-4 z-50 transition-all duration-300 ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:static md:h-screen md:sticky ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-100 border-gray-200 text-black"}`,
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "flex justify-between items-center mb-6",
@@ -2709,7 +2757,7 @@ function DashboardLayout({ children }) {
                                 children: t.dashboard
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 100,
+                                lineNumber: 142,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2718,13 +2766,13 @@ function DashboardLayout({ children }) {
                                 children: "✕"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 101,
+                                lineNumber: 143,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/DashboardLayout.tsx",
-                        lineNumber: 99,
+                        lineNumber: 141,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("nav", {
@@ -2733,71 +2781,71 @@ function DashboardLayout({ children }) {
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.dashboard
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 110,
+                                lineNumber: 152,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/products",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.products
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 113,
+                                lineNumber: 155,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/suppliers",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.suppliers
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 116,
+                                lineNumber: 158,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/offers",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.offers
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 119,
+                                lineNumber: 161,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/orders",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.orders
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 122,
+                                lineNumber: 164,
                                 columnNumber: 11
                             }, this),
-                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
+                            userRole === "ADMIN" && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/users",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.users
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 125,
-                                columnNumber: 11
+                                lineNumber: 170,
+                                columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$client$2f$app$2d$dir$2f$link$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
                                 href: "/settings",
                                 onClick: ()=>setOpen(false),
-                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"}`,
+                                className: `p-2 rounded transition-colors ${darkMode ? "hover:bg-gray-700 text-white" : "hover:bg-gray-200 text-black"}`,
                                 children: t.settings
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 128,
+                                lineNumber: 175,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -2806,32 +2854,28 @@ function DashboardLayout({ children }) {
                                 children: darkMode ? t.lightMode : t.darkMode
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 132,
+                                lineNumber: 179,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                onClick: ()=>{
-                                    localStorage.clear();
-                                    sessionStorage.clear();
-                                    window.location.href = "/";
-                                },
-                                className: "mt-2 p-2 bg-red-500 text-white rounded cursor-pointer hover:bg-red-600 transition-colors text-center font-semibold",
+                                onClick: handleLogout,
+                                className: "mt-2 p-2 bg-red-500 text-white rounded cursor-pointer hover:bg-red-600 transition-colors text-center font-semibold text-base",
                                 children: t.logout
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 143,
+                                lineNumber: 191,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/DashboardLayout.tsx",
-                        lineNumber: 109,
+                        lineNumber: 151,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                lineNumber: 92,
+                lineNumber: 134,
                 columnNumber: 7
             }, this),
             open && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -2839,22 +2883,22 @@ function DashboardLayout({ children }) {
                 onClick: ()=>setOpen(false)
             }, void 0, false, {
                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                lineNumber: 158,
+                lineNumber: 202,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "flex-1 flex flex-col min-w-0",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("header", {
-                        className: `border-b p-4 flex items-center justify-between sticky top-0 z-30 transition-colors ${darkMode ? "bg-gray-800 border-gray-700" : "bg-gray-50 border-gray-200"}`,
+                        className: `border-b p-4 flex items-center justify-between sticky top-0 z-30 transition-colors ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-black"}`,
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
-                                className: `md:hidden p-2 border rounded shadow-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-200"}`,
+                                className: `md:hidden p-2 border rounded shadow-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-200 text-black"}`,
                                 onClick: ()=>setOpen(!open),
                                 children: "☰"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 170,
+                                lineNumber: 214,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
@@ -2862,20 +2906,20 @@ function DashboardLayout({ children }) {
                                 children: t.dashboard
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 178,
+                                lineNumber: 222,
                                 columnNumber: 11
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                 className: "w-8 md:hidden"
                             }, void 0, false, {
                                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                                lineNumber: 179,
+                                lineNumber: 223,
                                 columnNumber: 11
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/src/components/DashboardLayout.tsx",
-                        lineNumber: 167,
+                        lineNumber: 211,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -2883,28 +2927,28 @@ function DashboardLayout({ children }) {
                         children: children
                     }, void 0, false, {
                         fileName: "[project]/src/components/DashboardLayout.tsx",
-                        lineNumber: 183,
+                        lineNumber: 227,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Footer$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {}, void 0, false, {
                         fileName: "[project]/src/components/DashboardLayout.tsx",
-                        lineNumber: 186,
+                        lineNumber: 230,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/src/components/DashboardLayout.tsx",
-                lineNumber: 165,
+                lineNumber: 209,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/src/components/DashboardLayout.tsx",
-        lineNumber: 87,
+        lineNumber: 129,
         columnNumber: 5
     }, this);
 }
-_s(DashboardLayout, "GjKdLwjQQPns2IgSUqWyvZvwmpM=");
+_s(DashboardLayout, "6j60AEoLk4/Q0k6SLuEro834c4U=");
 _c = DashboardLayout;
 var _c;
 __turbopack_context__.k.register(_c, "DashboardLayout");
