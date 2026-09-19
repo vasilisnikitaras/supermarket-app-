@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { jsPDF } from "jspdf";
-import { Html5QrcodeScanner } from "html5-qrcode"; // 📸 ΕΙΣΑΓΩΓΗ ΤΟΥ CAMERA SCANNER
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -13,7 +12,7 @@ export default function OrdersPage() {
   const [currentItem, setCurrentItem] = useState({ productId: "", quantity: "", price: "" });
   const [userRole, setUserRole] = useState<string | null>(null);
   const [scannerActive, setScannerActive] = useState(false);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<any>(null);
 
   useEffect(() => {
     setUserRole(localStorage.getItem("userRole"));
@@ -22,25 +21,25 @@ export default function OrdersPage() {
     fetch("/api/products").then(res => res.json()).then(data => setProducts(Array.isArray(data) ? data : [])).catch(() => setProducts([]));
   }, []);
 
-  // 📸 ΜΗΧΑΝΙΣΜΟΣ SCANNER: Ενεργοποιεί την κάμερα και διαβάζει Barcodes
+  // 👑 ΔΙΟΡΘΩΘΗΚΕ: Δυναμικό φόρτωμα του Scanner μόνο στον Browser (Safe SSR Execution)
   useEffect(() => {
-    if (scannerActive && showModal) {
-      scannerRef.current = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-      
-      scannerRef.current.render(
-        (decodedText) => {
-          // 🔎 Αναζήτηση προϊόντος αν ο EAN κωδικός περιέχεται μέσα στο όνομά του
-          const foundProd = products.find(p => p.name.includes(decodedText));
-          if (foundProd) {
-            setCurrentItem({ productId: foundProd.id.toString(), quantity: "1", price: foundProd.price.toString() });
-            setScannerActive(false);
-            if (scannerRef.current) scannerRef.current.clear().catch(() => {});
-          } else {
-            alert(`Barcode: ${decodedText} not found in Products name!`);
-          }
-        },
-        () => {}
-      );
+    if (scannerActive && showModal && typeof window !== "undefined") {
+      import("html5-qrcode").then((lib) => {
+        scannerRef.current = new lib.Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        scannerRef.current.render(
+          (decodedText: string) => {
+            const foundProd = products.find(p => p.name.includes(decodedText));
+            if (foundProd) {
+              setCurrentItem({ productId: foundProd.id.toString(), quantity: "1", price: foundProd.price.toString() });
+              setScannerActive(false);
+              if (scannerRef.current) scannerRef.current.clear().catch(() => {});
+            } else {
+              alert(`Barcode: ${decodedText} not found in Products name!`);
+            }
+          },
+          () => {}
+        );
+      }).catch(err => console.error("Scanner dynamic import failed:", err));
     }
 
     return () => {
@@ -150,19 +149,18 @@ export default function OrdersPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 text-black dark:text-white p-6 rounded shadow-xl w-full max-w-[450px] max-h-[85vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-xl w-full max-w-[450px] max-h-[85vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Create Order</h2>
             <select className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
               <option value="">Select Supplier</option>
               {suppliers.map((s: any) => (<option key={s.id} value={s.id}>{s.name}</option>))}
             </select>
             
-            {/* 📸 👑 ΚΟΥΜΠΙ ΚΑΙ LIVE ΠΛΑΙΣΙΟ ΚΑΜΕΡΑΣ SCANNER */}
             <div className="mb-3">
               <button onClick={() => setScannerActive(!scannerActive)} className="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded text-xs font-bold cursor-pointer transition-colors">
                 {scannerActive ? "🛑 Close Camera Scanner" : "📸 Open Barcode Scanner"}
               </button>
-              {scannerActive && <div id="reader" className="mt-2 border rounded overflow-hidden bg-black"></div>}
+              {scannerActive && <div id="reader" className="mt-2 border rounded overflow-hidden bg-black w-full min-h-[250px]"></div>}
             </div>
 
             <div className="border p-3 mb-3 rounded bg-gray-50 dark:bg-gray-700/50">
@@ -174,7 +172,6 @@ export default function OrdersPage() {
               <input type="number" placeholder="Price" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={currentItem.price} onChange={(e) => setCurrentItem({ ...currentItem, price: e.target.value })} />
               <button onClick={addItem} className="bg-green-600 text-white px-2 py-1.5 rounded w-full text-xs font-bold cursor-pointer">Add Item</button>
             </div>
-
             {items.length > 0 && (
               <div className="mb-4 max-h-32 overflow-y-auto space-y-1 border p-2 rounded bg-gray-100/50 dark:bg-gray-900/50">
                 {items.map((it, idx) => (
