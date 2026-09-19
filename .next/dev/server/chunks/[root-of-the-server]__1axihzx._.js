@@ -59,12 +59,10 @@ var mod = __turbopack_context__.x("node:stream", () => require("node:stream"));
 
 module.exports = mod;
 }),
-"[project]/src/app/api/internal-users/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
+"[project]/src/app/api/internal-users/track/route.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
 "use strict";
 
 __turbopack_context__.s([
-    "GET",
-    ()=>GET,
     "POST",
     ()=>POST
 ]);
@@ -73,43 +71,30 @@ var __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client__$5b$ex
 ;
 ;
 const prisma = new __TURBOPACK__imported__module__$5b$externals$5d2f40$prisma$2f$client__$5b$external$5d$__$2840$prisma$2f$client$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f40$prisma$2f$client$29$__["PrismaClient"]();
-async function GET() {
-    try {
-        const users = await prisma.user.findMany({
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-                isOnline: true,
-                lastSeen: true
-            },
-            orderBy: {
-                id: "asc"
-            }
-        });
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(users);
-    } catch (error) {
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            error: error.message
-        }, {
-            status: 500
-        });
-    }
-}
 async function POST(req) {
     try {
         const data = await req.json();
-        const newUser = await prisma.user.create({
+        const { userId, isOnline } = data;
+        if (!userId) {
+            return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+                error: "Missing userId"
+            }, {
+                status: 400
+            });
+        }
+        const updatedUser = await prisma.user.update({
+            where: {
+                id: Number(userId)
+            },
             data: {
-                name: data.name,
-                email: data.email.trim(),
-                password: data.password,
-                role: data.role.toUpperCase(),
-                shopId: 1
+                isOnline: Boolean(isOnline),
+                lastSeen: new Date()
             }
         });
-        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(newUser);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            success: true,
+            isOnline: updatedUser.isOnline
+        });
     } catch (error) {
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
             error: error.message
@@ -121,4 +106,4 @@ async function POST(req) {
 }),
 ];
 
-//# sourceMappingURL=%5Broot-of-the-server%5D__04h4ep4._.js.map
+//# sourceMappingURL=%5Broot-of-the-server%5D__1axihzx._.js.map
