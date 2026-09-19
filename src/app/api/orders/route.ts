@@ -3,15 +3,24 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// GET: Φέρνει όλες τις παραγγελίες μαζί με τους προμηθευτές και τα προϊόντα τους
-export async function GET() {
+// GET: Φέρνει όλες τις παραγγελίες ΑΥΣΤΗΡΑ και μόνο για το συγκεκριμένο κατάστημα
+export async function GET(req: Request) {
   try {
+    const shopId = req.headers.get("x-shop-id");
+    
+    if (!shopId) {
+      return NextResponse.json({ error: "Missing Shop Identity Configuration" }, { status: 400 });
+    }
+
     const orders = await prisma.order.findMany({
+      where: {
+        shopId: Number(shopId), // 👑 Η ΨΗΦΙΑΚΗ ΑΣΠΙΔΑ: Απομόνωση των orders live
+      },
       include: {
         supplier: true,
         items: {
           include: {
-            product: true, // 👑 ΣΗΜΑΝΤΙΚΟ: Τραβάει live το όνομα του προϊόντος (π.χ. Chocolate)
+            product: true,
           },
         },
       },
@@ -23,10 +32,15 @@ export async function GET() {
   }
 }
 
-// POST: Δημιουργεί νέα παραγγελία live στο Neon DB
+// POST: Δημιουργεί νέα παραγγελία κλειδωμένη στο shopId του συνδεδεμένου χρήστη
 export async function POST(req: Request) {
   try {
     const data = await req.json();
+    const shopId = req.headers.get("x-shop-id");
+
+    if (!shopId) {
+      return NextResponse.json({ error: "Missing Shop Identity Configuration" }, { status: 400 });
+    }
     
     // Υπολογισμός συνολικού ποσού της παραγγελίας στο Backend
     const total = data.items.reduce(
@@ -38,7 +52,7 @@ export async function POST(req: Request) {
       data: {
         supplierId: Number(data.supplierId),
         total: Number(total),
-        shopId: 1,
+        shopId: Number(shopId), // 👑 Κλειδώνει αυτόματα στο κατάστημα του χρήστη
         items: {
           create: data.items.map((item: any) => ({
             productId: Number(item.productId),
