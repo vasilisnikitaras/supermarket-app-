@@ -13,25 +13,20 @@ export default function OrdersPage() {
 
   useEffect(() => {
     setUserRole(localStorage.getItem("userRole"));
-    fetch("/api/orders").then(res => res.json()).then(data => setOrders(Array.isArray(data) ? data : [])).catch(() => setOrders([]));
+    fetch("/orders/api/orders" ? "/api/orders" : "/api/orders").then(res => res.json()).then(data => setOrders(Array.isArray(data) ? data : [])).catch(() => setOrders([]));
     fetch("/api/suppliers").then(res => res.json()).then(data => setSuppliers(Array.isArray(data) ? data : [])).catch(() => setSuppliers([]));
     fetch("/api/products").then(res => res.json()).then(data => setProducts(Array.isArray(data) ? data : [])).catch(() => setProducts([]));
   }, []);
 
-  // 🟢 LIVE ADD ITEM: Κρατάει και το Όνομα του προϊόντος για το Preview στην οθόνη
   const addItem = () => {
     if (!currentItem.productId || !currentItem.quantity || !currentItem.price) return;
-    
-    // Βρίσκουμε το προϊόν live από τη λίστα για να πάρουμε το όνομά του
     const selectedProd = products.find(p => p.id === Number(currentItem.productId));
     const productName = selectedProd ? selectedProd.name : `Product #${currentItem.productId}`;
 
     setItems([...items, {
       ...currentItem,
-      productName: productName // Αποθήκευση ονόματος για το UI
+      productName: productName
     }]);
-
-    // Καθαρισμός μόνο των πεδίων του προϊόντος για την επόμενη προσθήκη
     setCurrentItem({ productId: "", quantity: "", price: "" });
   };
 
@@ -50,8 +45,7 @@ export default function OrdersPage() {
       const newOrder = await res.json();
       setOrders([...orders, newOrder]);
       setShowModal(false);
-      setItems([]); 
-      setSupplierId("");
+      setItems([]); setSupplierId("");
     }
   };
 
@@ -65,14 +59,17 @@ export default function OrdersPage() {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Orders</h1>
-      <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer">Create Order</button>
+      <h1 className="text-2xl font-bold mb-4">Orders / Παραγγελίες</h1>
+      <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer hover:bg-blue-700 transition-colors">Create Order</button>
+      
       <div className="w-full overflow-x-auto">
         <table className="w-full mt-6 border border-collapse border-gray-200 dark:border-gray-700">
           <thead>
-            <tr className="bg-gray-100 dark:bg-gray-800">
+            <tr className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">ID</th>
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Supplier</th>
+              {/* 👑 ΝΕΑ ΣΤΗΛΗ: Live εμφάνιση των προϊόντων στον κεντρικό πίνακα */}
+              <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Items / Προϊόντα</th>
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Total</th>
               {userRole === "ADMIN" && <th className="p-2 border border-gray-200 dark:border-gray-700 text-center">Actions</th>}
             </tr>
@@ -81,13 +78,23 @@ export default function OrdersPage() {
             {orders.map((o: any) => (
               <tr key={o.id} className="border-b border-gray-200 dark:border-gray-700">
                 <td className="p-2 border border-gray-200 dark:border-gray-700">{o.id}</td>
-                <td className="p-2 border border-gray-200 dark:border-gray-700">{o.supplier?.name || `Supplier #${o.supplierId}`}</td>
-                <td className="p-2 border border-gray-200 dark:border-gray-700">\${Number(o.total || 0).toFixed(2)}</td>
+                <td className="p-2 border border-gray-200 dark:border-gray-700 font-medium">{o.supplier?.name || `Supplier #${o.supplierId}`}</td>
+                {/* 👑 Live map των προϊόντων της παραγγελίας από το Neon DB Relation */}
+                <td className="p-2 border border-gray-200 dark:border-gray-700 text-xs">
+                  <div className="space-y-0.5">
+                    {o.items && o.items.map((item: any, idx: number) => (
+                      <div key={idx} className="text-gray-600 dark:text-gray-300">
+                        • <span className="font-semibold text-blue-600 dark:text-blue-400">{item.product?.name || `Product #${item.productId}`}</span> ({item.quantity} x \${Number(item.price).toFixed(2)})
+                      </div>
+                    ))}
+                    {(!o.items || o.items.length === 0) && <span className="text-gray-400">-</span>}
+                  </div>
+                </td>
+                <td className="p-2 border border-gray-200 dark:border-gray-700 font-bold">\${Number(o.total || 0).toFixed(2)}</td>
                 {userRole === "ADMIN" && (
                   <td className="p-2 border border-gray-200 dark:border-gray-700 text-center">
-                    /*  Το ΣΩΣΤΟ: */
-                  <button onClick={() => handleDelete(o.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer">Delete</button>
-
+                    {/* 👑 ΔΙΟΡΘΩΘΗΚΕ: Καθαρό, λειτουργικό κουμπί Delete χωρίς σχόλια κειμένου */}
+                    <button onClick={() => handleDelete(o.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors">Delete</button>
                   </td>
                 )}
               </tr>
@@ -115,7 +122,6 @@ export default function OrdersPage() {
               <button onClick={addItem} className="bg-green-600 text-white px-2 py-1.5 rounded w-full text-xs font-bold cursor-pointer hover:bg-green-700 transition-colors">Add Item</button>
             </div>
 
-            {/* 👑 ΔΙΟΡΘΩΘΗΚΕ: Live Λίστα Προσθήκης Αντικειμένων (Preview με Όνομα) */}
             {items.length > 0 && (
               <div className="mb-4 max-h-32 overflow-y-auto space-y-1 border p-2 rounded bg-gray-100/50 dark:bg-gray-900/50 dark:border-gray-700">
                 <p className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Added Items / Προϊόντα στην παραγγελία:</p>
