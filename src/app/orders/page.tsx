@@ -13,7 +13,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     setUserRole(localStorage.getItem("userRole"));
-    fetch("/orders/api/orders" ? "/api/orders" : "/api/orders").then(res => res.json()).then(data => setOrders(Array.isArray(data) ? data : [])).catch(() => setOrders([]));
+    fetch("/api/orders").then(res => res.json()).then(data => setOrders(Array.isArray(data) ? data : [])).catch(() => setOrders([]));
     fetch("/api/suppliers").then(res => res.json()).then(data => setSuppliers(Array.isArray(data) ? data : [])).catch(() => setSuppliers([]));
     fetch("/api/products").then(res => res.json()).then(data => setProducts(Array.isArray(data) ? data : [])).catch(() => setProducts([]));
   }, []);
@@ -68,7 +68,6 @@ export default function OrdersPage() {
             <tr className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">ID</th>
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Supplier</th>
-              {/* 👑 ΝΕΑ ΣΤΗΛΗ: Live εμφάνιση των προϊόντων στον κεντρικό πίνακα */}
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Items / Προϊόντα</th>
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">Total</th>
               {userRole === "ADMIN" && <th className="p-2 border border-gray-200 dark:border-gray-700 text-center">Actions</th>}
@@ -79,7 +78,6 @@ export default function OrdersPage() {
               <tr key={o.id} className="border-b border-gray-200 dark:border-gray-700">
                 <td className="p-2 border border-gray-200 dark:border-gray-700">{o.id}</td>
                 <td className="p-2 border border-gray-200 dark:border-gray-700 font-medium">{o.supplier?.name || `Supplier #${o.supplierId}`}</td>
-                {/* 👑 Live map των προϊόντων της παραγγελίας από το Neon DB Relation */}
                 <td className="p-2 border border-gray-200 dark:border-gray-700 text-xs">
                   <div className="space-y-0.5">
                     {o.items && o.items.map((item: any, idx: number) => (
@@ -93,7 +91,6 @@ export default function OrdersPage() {
                 <td className="p-2 border border-gray-200 dark:border-gray-700 font-bold">\${Number(o.total || 0).toFixed(2)}</td>
                 {userRole === "ADMIN" && (
                   <td className="p-2 border border-gray-200 dark:border-gray-700 text-center">
-                    {/* 👑 ΔΙΟΡΘΩΘΗΚΕ: Καθαρό, λειτουργικό κουμπί Delete χωρίς σχόλια κειμένου */}
                     <button onClick={() => handleDelete(o.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors">Delete</button>
                   </td>
                 )}
