@@ -21,33 +21,28 @@ export default function OrdersPage() {
     fetch("/api/products").then(res => res.json()).then(data => setProducts(Array.isArray(data) ? data : [])).catch(() => setProducts([]));
   }, []);
 
-  // 👑 ΔΙΟΡΘΩΘΗΚΕ: Δυναμικό φόρτωμα του Scanner μόνο στον Browser (Safe SSR Execution)
   useEffect(() => {
-    if (scannerActive && showModal && typeof window !== "undefined") {
+    if (scannerActive && typeof window !== "undefined") {
       import("html5-qrcode").then((lib) => {
-        scannerRef.current = new lib.Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        scannerRef.current = new lib.Html5QrcodeScanner("page-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
         scannerRef.current.render(
           (decodedText: string) => {
             const foundProd = products.find(p => p.name.includes(decodedText));
             if (foundProd) {
               setCurrentItem({ productId: foundProd.id.toString(), quantity: "1", price: foundProd.price.toString() });
               setScannerActive(false);
+              setShowModal(true);
               if (scannerRef.current) scannerRef.current.clear().catch(() => {});
             } else {
-              alert(`Barcode: ${decodedText} not found in Products name!`);
+              alert(`Barcode: ${decodedText} \nΔεν βρέθηκε στα προϊόντα!`);
             }
           },
           () => {}
         );
-      }).catch(err => console.error("Scanner dynamic import failed:", err));
+      }).catch(() => {});
     }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(() => {});
-      }
-    };
-  }, [scannerActive, showModal, products]);
+    return () => { if (scannerRef.current) scannerRef.current.clear().catch(() => {}); };
+  }, [scannerActive, products]);
 
   const addItem = () => {
     if (!currentItem.productId || !currentItem.quantity || !currentItem.price) return;
@@ -107,10 +102,29 @@ export default function OrdersPage() {
   };
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Orders / Παραγγελίες</h1>
-      <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer hover:bg-blue-700 transition-colors">Create Order</button>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">Orders / Παραγγελίες</h1>
+          <p className="text-gray-500 text-sm">Δημιουργία και διαχείριση τιμολογίων προμηθευτών.</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer hover:bg-blue-700 transition-colors">Create Order</button>
+          <button onClick={() => setScannerActive(!scannerActive)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-medium cursor-pointer transition-colors">
+            {scannerActive ? "🛑 Close Scanner" : "📸 Quick Scan Item"}
+          </button>
+        </div>
+      </div>
+
+      {/* 📸 Live Κάμερα απευθείας στη σελίδα (100% Safe ID Render έξω από το Modal) */}
+      {scannerActive && (
+        <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 border-purple-300 dark:border-purple-900 max-w-md mx-auto">
+          <p className="text-xs font-bold text-purple-600 mb-2 text-center uppercase tracking-wider">Live Barcode Reader Active / Δείξτε το Barcode στην κάμερα:</p>
+          <div id="page-reader" className="border rounded overflow-hidden bg-black w-full min-h-[250px]"></div>
+        </div>
+      )}
+
       <div className="w-full overflow-x-auto">
-        <table className="w-full mt-6 border border-collapse border-gray-200 dark:border-gray-700">
+        <table className="w-full border border-collapse border-gray-200 dark:border-gray-700">
           <thead>
             <tr className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white">
               <th className="p-2 border border-gray-200 dark:border-gray-700 text-left">ID</th>
@@ -149,20 +163,12 @@ export default function OrdersPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-xl w-full max-w-[450px] max-h-[85vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-xl w-full max-w-[450px] max-h-[85vh] overflow-y-auto text-black dark:text-white">
             <h2 className="text-xl font-bold mb-4">Create Order</h2>
             <select className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
               <option value="">Select Supplier</option>
               {suppliers.map((s: any) => (<option key={s.id} value={s.id}>{s.name}</option>))}
             </select>
-            
-            <div className="mb-3">
-              <button onClick={() => setScannerActive(!scannerActive)} className="w-full bg-purple-600 hover:bg-purple-700 text-white p-2 rounded text-xs font-bold cursor-pointer transition-colors">
-                {scannerActive ? "🛑 Close Camera Scanner" : "📸 Open Barcode Scanner"}
-              </button>
-              {scannerActive && <div id="reader" className="mt-2 border rounded overflow-hidden bg-black w-full min-h-[250px]"></div>}
-            </div>
-
             <div className="border p-3 mb-3 rounded bg-gray-50 dark:bg-gray-700/50">
               <select className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={currentItem.productId} onChange={(e) => setCurrentItem({ ...currentItem, productId: e.target.value })}>
                 <option value="">Select Product</option>
@@ -183,7 +189,7 @@ export default function OrdersPage() {
               </div>
             )}
             <button onClick={createOrder} className="bg-blue-600 text-white px-4 py-2 rounded w-full font-bold">Save Order</button>
-            <button onClick={() => { setShowModal(false); setItems([]); setSupplierId(""); setScannerActive(false); }} className="mt-3 text-gray-500 w-full text-center text-sm cursor-pointer">Cancel</button>
+            <button onClick={() => { setShowModal(false); setItems([]); setSupplierId(""); }} className="mt-3 text-gray-500 w-full text-center text-sm cursor-pointer">Cancel</button>
           </div>
         </div>
       )}
