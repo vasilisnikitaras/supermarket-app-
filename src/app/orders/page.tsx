@@ -85,7 +85,9 @@ export default function OrdersPage() {
                 <td className="p-2 border border-gray-200 dark:border-gray-700">\${Number(o.total || 0).toFixed(2)}</td>
                 {userRole === "ADMIN" && (
                   <td className="p-2 border border-gray-200 dark:border-gray-700 text-center">
-                    <button onClick={() => handleDelete(p.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer">Delete</button>
+                    /*  Το ΣΩΣΤΟ: */
+                  <button onClick={() => handleDelete(o.id)} className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold cursor-pointer">Delete</button>
+
                   </td>
                 )}
               </tr>
