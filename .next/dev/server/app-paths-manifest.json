@@ -1,5 +1,15 @@
 {
   "/api/internal-users/route": "app/api/internal-users/route.js",
   "/api/internal-users/track/route": "app/api/internal-users/track/route.js",
+  "/api/offers/route": "app/api/offers/route.js",
+  "/api/orders/route": "app/api/orders/route.js",
+  "/api/products/route": "app/api/products/route.js",
+  "/api/suppliers/route": "app/api/suppliers/route.js",
+  "/offers/page": "app/offers/page.js",
+  "/orders/page": "app/orders/page.js",
+  "/page": "app/page.js",
+  "/products/page": "app/products/page.js",
+  "/settings/page": "app/settings/page.js",
+  "/suppliers/page": "app/suppliers/page.js",
   "/users/page": "app/users/page.js"
 }
