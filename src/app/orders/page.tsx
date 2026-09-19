@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { jsPDF } from "jspdf";
 
 export default function OrdersPage() {
@@ -11,8 +11,7 @@ export default function OrdersPage() {
   const [items, setItems] = useState<any[]>([]);
   const [currentItem, setCurrentItem] = useState({ productId: "", quantity: "", price: "" });
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [scannerActive, setScannerActive] = useState(false);
-  const scannerRef = useRef<any>(null);
+  const [barcodeInput, setBarcodeInput] = useState("");
 
   useEffect(() => {
     setUserRole(localStorage.getItem("userRole"));
@@ -21,28 +20,21 @@ export default function OrdersPage() {
     fetch("/api/products").then(res => res.json()).then(data => setProducts(Array.isArray(data) ? data : [])).catch(() => setProducts([]));
   }, []);
 
-  useEffect(() => {
-    if (scannerActive && typeof window !== "undefined") {
-      import("html5-qrcode").then((lib) => {
-        scannerRef.current = new lib.Html5QrcodeScanner("page-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
-        scannerRef.current.render(
-          (decodedText: string) => {
-            const foundProd = products.find(p => p.name.includes(decodedText));
-            if (foundProd) {
-              setCurrentItem({ productId: foundProd.id.toString(), quantity: "1", price: foundProd.price.toString() });
-              setScannerActive(false);
-              setShowModal(true);
-              if (scannerRef.current) scannerRef.current.clear().catch(() => {});
-            } else {
-              alert(`Barcode: ${decodedText} \nΔεν βρέθηκε στα προϊόντα!`);
-            }
-          },
-          () => {}
-        );
-      }).catch(() => {});
+  // 👑 ΤΑΧΥΤΑΤΟΣ ΜΗΧΑΝΙΣΜΟΣ SEARCH: Ψάχνει το Barcode live στο όνομα του προϊόντος
+  const handleBarcodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!barcodeInput.trim()) return;
+
+    const foundProd = products.find(p => p.name.includes(barcodeInput.trim()));
+    if (foundProd) {
+      setCurrentItem({ productId: foundProd.id.toString(), quantity: "1", price: foundProd.price.toString() });
+      setBarcodeInput("");
+      setShowModal(true); // Ανοίγει αμέσως τη φόρμα έτοιμη και συμπληρωμένη!
+    } else {
+      alert(`Barcode: "${barcodeInput}" \nΔεν βρέθηκε στα προϊόντα του καταστήματος!`);
+      setBarcodeInput("");
     }
-    return () => { if (scannerRef.current) scannerRef.current.clear().catch(() => {}); };
-  }, [scannerActive, products]);
+  };
 
   const addItem = () => {
     if (!currentItem.productId || !currentItem.quantity || !currentItem.price) return;
@@ -107,21 +99,35 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold">Orders / Παραγγελίες</h1>
           <p className="text-gray-500 text-sm">Δημιουργία και διαχείριση τιμολογίων προμηθευτών.</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer hover:bg-blue-700 transition-colors">Create Order</button>
-          <button onClick={() => setScannerActive(!scannerActive)} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded font-medium cursor-pointer transition-colors">
-            {scannerActive ? "🛑 Close Scanner" : "📸 Quick Scan Item"}
-          </button>
+        <div>
+          <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium cursor-pointer hover:bg-blue-700 transition-colors w-full md:w-auto">Create Order</button>
         </div>
       </div>
 
-      {/* 📸 Live Κάμερα απευθείας στη σελίδα (100% Safe ID Render έξω από το Modal) */}
-      {scannerActive && (
-        <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 border-purple-300 dark:border-purple-900 max-w-md mx-auto">
-          <p className="text-xs font-bold text-purple-600 mb-2 text-center uppercase tracking-wider">Live Barcode Reader Active / Δείξτε το Barcode στην κάμερα:</p>
-          <div id="page-reader" className="border rounded overflow-hidden bg-black w-full min-h-[250px]"></div>
-        </div>
-      )}
+      {/* 👑 ΤΟ ΝΕΟ SMART BARCODE INPUT BOX (100% Σταθερό - Παρακάμπτει Windows Defender/WDAC) */}
+      <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800 border-purple-300 dark:border-purple-900 max-w-md mx-auto shadow-sm">
+        <form onSubmit={handleBarcodeSubmit} className="flex flex-col gap-2">
+          <label className="text-xs font-bold text-purple-600 uppercase tracking-wider text-center block">
+            ⚡ Quick Barcode Scan / Search Product
+          </label>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              placeholder="Σκανάρετε ή πληκτρολογήστε Barcode (e.g. 520123...)" 
+              className="border p-2 flex-1 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              value={barcodeInput}
+              onChange={(e) => setBarcodeInput(e.target.value)}
+              autoFocus
+            />
+            <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-xs font-bold transition-colors cursor-pointer">
+              Search
+            </button>
+          </div>
+          <span className="text-[10px] text-gray-400 text-center block">
+            Λειτουργεί live με τοπικά scanner πληκτρολογίου ή με χειροκίνητη εισαγωγή.
+          </span>
+        </form>
+      </div>
 
       <div className="w-full overflow-x-auto">
         <table className="w-full border border-collapse border-gray-200 dark:border-gray-700">
@@ -165,17 +171,17 @@ export default function OrdersPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-xl w-full max-w-[450px] max-h-[85vh] overflow-y-auto text-black dark:text-white">
             <h2 className="text-xl font-bold mb-4">Create Order</h2>
-            <select className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+            <select className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600" value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
               <option value="">Select Supplier</option>
               {suppliers.map((s: any) => (<option key={s.id} value={s.id}>{s.name}</option>))}
             </select>
-            <div className="border p-3 mb-3 rounded bg-gray-50 dark:bg-gray-700/50">
-              <select className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={currentItem.productId} onChange={(e) => setCurrentItem({ ...currentItem, productId: e.target.value })}>
+            <div className="border p-3 mb-3 rounded bg-gray-50 dark:bg-gray-700/50 dark:border-gray-600">
+              <select className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600" value={currentItem.productId} onChange={(e) => setCurrentItem({ ...currentItem, productId: e.target.value })}>
                 <option value="">Select Product</option>
                 {products.map((p: any) => (<option key={p.id} value={p.id}>{p.name}</option>))}
               </select>
-              <input type="number" placeholder="Qty" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={currentItem.quantity} onChange={(e) => setCurrentItem({ ...currentItem, quantity: e.target.value })} />
-              <input type="number" placeholder="Price" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white" value={currentItem.price} onChange={(e) => setCurrentItem({ ...currentItem, price: e.target.value })} />
+              <input type="number" placeholder="Qty" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600" value={currentItem.quantity} onChange={(e) => setCurrentItem({ ...currentItem, quantity: e.target.value })} />
+              <input type="number" placeholder="Price" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600" value={currentItem.price} onChange={(e) => setCurrentItem({ ...currentItem, price: e.target.value })} />
               <button onClick={addItem} className="bg-green-600 text-white px-2 py-1.5 rounded w-full text-xs font-bold cursor-pointer">Add Item</button>
             </div>
             {items.length > 0 && (
