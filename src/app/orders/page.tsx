@@ -24,11 +24,9 @@ export default function OrdersPage() {
 
   useEffect(() => {
     setUserRole(localStorage.getItem("userRole"));
-    const savedShopId = localStorage.getItem("shopId");
-    if (savedShopId) {
-      setShopId(savedShopId);
-      fetchOrderData(savedShopId);
-    }
+    const savedShopId = localStorage.getItem("shopId") || "1";
+    setShopId(savedShopId);
+    fetchOrderData(savedShopId);
   }, []);
 
   const handleBarcodeSubmit = (e: React.FormEvent) => {
@@ -52,7 +50,17 @@ export default function OrdersPage() {
   };
 
   const createOrder = async () => {
-    if (!supplierId || items.length === 0 || !shopId || isSubmitting) return;
+    // 👑 ΑΠΟΛΥΤΟ ALERT FIX: Αν ο χρήστης ξέχασε τον προμηθευτή, πετάμε μήνυμα αντί να κολλάει η οθόνη!
+    if (!supplierId) {
+      alert("Παρακαλώ επιλέξτε έναν Προμηθευτή (Select Supplier) από τη λίστα πριν πατήσετε Save!");
+      return;
+    }
+    if (items.length === 0) {
+      alert("Παρακαλώ προσθέστε τουλάχιστον ένα προϊόν (Add Item) στην παραγγελία σας!");
+      return;
+    }
+    if (!shopId || isSubmitting) return;
+
     setIsSubmitting(true);
     try {
       const res = await fetch("/api/orders", {
@@ -64,8 +72,8 @@ export default function OrdersPage() {
         })
       });
       if (res.ok) {
-        const newOrder = await res.json();
-        setOrders([...orders, newOrder]); setShowModal(false); setItems([]); setSupplierId("");
+        setShowModal(false); setItems([]); setSupplierId("");
+        if (shopId) fetchOrderData(shopId);
       }
     } catch (err) {
       console.error("Failed to create order:", err);
@@ -76,7 +84,9 @@ export default function OrdersPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure?")) return;
-    if ((await fetch(`/api/orders/${id}`, { method: "DELETE" })).ok) setOrders(orders.filter(o => o.id !== id));
+    if ((await fetch(`/api/orders/${id}`, { method: "DELETE" })).ok) {
+      if (shopId) fetchOrderData(shopId);
+    }
   };
 
   const handlePrintPDF = (order: any) => {
@@ -133,28 +143,37 @@ export default function OrdersPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded shadow-xl w-full max-w-[450px] border border-gray-100 dark:border-gray-700 text-black dark:text-white">
             <h2 className="text-xl font-bold mb-4">Create New Order</h2>
+            
             <select className="border p-2 w-full mb-3 rounded bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm focus:outline-none" value={supplierId} onChange={e => setSupplierId(e.target.value)} disabled={isSubmitting}>
               <option value="">Select Supplier</option>
               {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
+
             <div className="border border-gray-200 dark:border-gray-600 p-3 mb-3 rounded bg-gray-50 dark:bg-gray-700/50">
               <select className="border p-2 w-full mb-2 bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm focus:outline-none" value={currentItem.productId} onChange={e => setCurrentItem({ ...currentItem, productId: e.target.value })} disabled={isSubmitting}>
                 <option value="">Select Product</option>
                 {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
-              <input type="number" placeholder="Qty" className="border p-2 w-full mb-2 bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm focus:outline-none" value={currentItem.quantity} onChange={e => setCurrentItem({ ...currentItem, quantity: e.target.value })} disabled={isSubmitting} />
-              <input type="number" placeholder="Price" className="border p-2 w-full mb-2 bg-white text-black dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm focus:outline-none" value={currentItem.price} onChange={e => setCurrentItem({ ...currentItem, price: e.target.value })} disabled={isSubmitting} />
-              <button onClick={addItem} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded w-full text-xs font-bold transition-colors cursor-pointer">Add Item</button>
+              <input type="number" placeholder="Qty" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white text-sm" value={currentItem.quantity} onChange={e => setCurrentItem({ ...currentItem, quantity: e.target.value })} disabled={isSubmitting} />
+              <input type="number" placeholder="Price" className="border p-2 w-full mb-2 rounded bg-white text-black dark:bg-gray-700 dark:text-white text-sm" value={currentItem.price} onChange={e => setCurrentItem({ ...currentItem, price: e.target.value })} disabled={isSubmitting} />
+              <button onClick={addItem} disabled={isSubmitting} className="bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 rounded w-full text-xs font-bold cursor-pointer transition-colors">Add Item</button>
             </div>
+
             {items.length > 0 && (
-              <div className="mb-4 max-h-32 overflow-y-auto space-y-1 border p-2 rounded bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
-                {items.map((it, idx) => <div key={idx} className="text-xs flex justify-between"><span>{it.productName}</span><span className="font-mono font-semibold">{it.quantity} x \${Number(it.price).toFixed(2)}</span></div>)}
+              <div className="mb-4 max-h-32 overflow-y-auto space-y-1 border p-2 rounded bg-gray-100/50 dark:bg-gray-900/50">
+                {items.map((it, idx) => (
+                  <div key={idx} className="text-xs flex justify-between bg-white dark:bg-gray-700 p-2 rounded shadow-sm">
+                    <span>{it.productName}</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">{it.quantity} x \${Number(it.price).toFixed(2)}</span>
+                  </div>
+                ))}
               </div>
             )}
+
             <button onClick={createOrder} disabled={isSubmitting} className={`w-full text-white px-4 py-2 rounded font-bold text-sm transition-colors ${isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 cursor-pointer"}`}>
-              {isSubmitting ? "Saving..." : "Save Order"}
+              {isSubmitting ? "Saving Order..." : "Save Order"}
             </button>
-            <button onClick={() => { if(!isSubmitting) { setShowModal(false); setItems([]); setSupplierId(""); } }} disabled={isSubmitting} className="mt-3 text-gray-500 hover:text-gray-700 w-full text-center text-sm cursor-pointer transition-colors block">Cancel</button>
+            <button onClick={() => { setShowModal(false); setItems([]); setSupplierId(""); }} disabled={isSubmitting} className="mt-3 text-gray-500 hover:text-gray-700 w-full text-center text-sm cursor-pointer transition-colors block">Cancel</button>
           </div>
         </div>
       )}
