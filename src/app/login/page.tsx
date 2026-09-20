@@ -27,6 +27,7 @@ export default function LoginPage() {
         localStorage.setItem("userRole", data.role); // "ADMIN" ή "STAFF"
         localStorage.setItem("userName", data.name);
         localStorage.setItem("userId", data.id.toString());
+        localStorage.setItem("shopId", data.shopId ? data.shopId.toString() : "1"); // 👑 Multi-Shop ID Storage Lock
         
         // Στέλνουμε τον χρήστη κατευθείαν στο κεντρικό Dashboard
         window.location.href = "/";
