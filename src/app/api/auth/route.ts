@@ -3,31 +3,28 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-// POST: Έλεγχος στοιχείων σύνδεσης (Login)
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const data = await req.json();
+    const { email, password } = data;
 
-    if (!email || !password) {
-      return NextResponse.json({ error: "Missing email or password" }, { status: 400 });
-    }
-
-    // Ψάχνουμε live στο Neon DB τον χρήστη με αυτό το email
-    const user = await prisma.user.findUnique({
-      where: { email: email.trim() },
+    // Ψάχνουμε live τον χρήστη στην PostgreSQL (Neon DB)
+    const user = await prisma.user.findFirst({
+      where: { 
+        email: email.trim() 
+      },
     });
 
-    // Αν δεν βρεθεί ή ο κωδικός είναι λάθος
     if (!user || user.password !== password) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
     }
 
-    // Αν όλα είναι σωστά, επιστρέφουμε τα στοιχεία και τον Ρόλο του
+    // 👑 ΤΟ ΜΕΓΑΛΟ ΚΛΕΙΔΙ: Επιστρέφουμε το αληθινό shopId του χρήστη από τη βάση!
     return NextResponse.json({
       id: user.id,
       name: user.name,
-      email: user.email,
-      role: user.role, // "ADMIN" ή "STAFF"
+      role: user.role,
+      shopId: user.shopId, // 🧠 Πλέον ο Γιάννης θα στείλει το 6!
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
