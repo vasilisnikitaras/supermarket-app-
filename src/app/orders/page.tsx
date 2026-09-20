@@ -50,7 +50,6 @@ export default function OrdersPage() {
   };
 
   const createOrder = async () => {
-    // 👑 ΑΠΟΛΥΤΟ ALERT FIX: Αν ο χρήστης ξέχασε τον προμηθευτή, πετάμε μήνυμα αντί να κολλάει η οθόνη!
     if (!supplierId) {
       alert("Παρακαλώ επιλέξτε έναν Προμηθευτή (Select Supplier) από τη λίστα πριν πατήσετε Save!");
       return;
@@ -91,8 +90,49 @@ export default function OrdersPage() {
 
   const handlePrintPDF = (order: any) => {
     const doc = new jsPDF();
+    
+    // 👑 ΚΕΦΑΛΙΔΑ ΤΙΜΟΛΟΓΙΟΥ
     doc.setFont("helvetica", "bold").setFontSize(22).setTextColor(37, 99, 235).text("VNF MARKET", 14, 20);
-    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(100, 116, 139).text("Enterprise Management System", 14, 26).text(`INVOICE #ORD-${order.id}`, 150, 20);
+    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(100, 116, 139).text("Enterprise Management System", 14, 26);
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(30, 41, 59).text(`INVOICE #ORD-${order.id}`, 150, 20);
+    
+    // ΣΤΟΙΧΕΙΑ ΠΡΟΜΗΘΕΥΤΗ
+    doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(71, 85, 105);
+    doc.text(`Supplier: ${order.supplier?.name || `Supplier #\${order.supplierId}`}`, 14, 40);
+    doc.text(`Shop Identity: Shop #${shopId}`, 14, 46);
+    doc.text(`Date: ${new Date().toLocaleDateString("el-GR")}`, 14, 52);
+    
+    // 📊 ΠΙΝΑΚΑΣ ΠΡΟΪΟΝΤΩΝ & ΤΙΜΩΝ
+    doc.setDrawColor(226, 232, 240).setFillColor(248, 250, 252).rect(14, 60, 182, 8, "F");
+    doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(15, 23, 42);
+    doc.text("Product / Item Name", 16, 65);
+    doc.text("Qty", 120, 65);
+    doc.text("Price", 145, 65);
+    doc.text("Subtotal", 170, 65);
+    
+    let yOffset = 74;
+    const orderItems = Array.isArray(order.items) ? order.items : [];
+    
+    orderItems.forEach((item: any) => {
+      doc.setFont("helvetica", "normal").setTextColor(51, 65, 85);
+      doc.text(item.product?.name || `Product #${item.productId}`, 16, yOffset);
+      doc.text(String(item.quantity), 122, yOffset);
+      doc.text(`$${Number(item.price).toFixed(2)}`, 145, yOffset);
+      
+      const subtotal = Number(item.quantity) * Number(item.price);
+      doc.setFont("helvetica", "bold").setTextColor(15, 23, 42);
+      doc.text(`$${subtotal.toFixed(2)}`, 170, yOffset);
+      
+      doc.setDrawColor(241, 245, 249).line(14, yOffset + 3, 196, yOffset + 3);
+      yOffset += 10;
+    });
+    
+    // 💰 ΤΕΛΙΚΟ ΣΥΝΟΛΟ
+    doc.setDrawColor(37, 99, 235).setLineWidth(0.5).line(14, yOffset + 2, 196, yOffset + 2);
+    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(37, 99, 235);
+    doc.text("TOTAL ORDER AMOUNT:", 110, yOffset + 10);
+    doc.text(`$${Number(order.total || 0).toFixed(2)}`, 170, yOffset + 10);
+    
     doc.save(`VNF_Order_Invoice_${order.id}.pdf`);
   };
   return (
