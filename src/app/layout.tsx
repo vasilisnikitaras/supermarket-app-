@@ -1,5 +1,6 @@
-import "./globals.css"; // Εδώ καλούμε το αρχείο css που έφτιαξες παραπάνω
+import "./globals.css";
 import DashboardLayout from "../components/DashboardLayout";
+import PublicLayoutWrapper from "../components/PublicLayoutWrapper";
 
 export const metadata = {
   title: "Supermarket App",
@@ -10,7 +11,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="el">
       <body className="bg-white text-black">
-        <DashboardLayout>{children}</DashboardLayout>
+        {/* 👑 Διαχωρίζουμε live τις σελίδες του Admin από τις δημόσιες σελίδες των πελατών */}
+        <PublicLayoutWrapper DashboardLayout={DashboardLayout}>
+          {children}
+        </PublicLayoutWrapper>
       </body>
     </html>
   );
