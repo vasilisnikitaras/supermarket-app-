@@ -32,12 +32,18 @@ export default function OrdersPage() {
   const handleBarcodeSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!barcodeInput.trim()) return;
-    const found = products.find(p => p.name.includes(barcodeInput.trim()));
+
+    let cleanBarcode = barcodeInput.trim();
+    if (cleanBarcode.includes(" - ")) {
+      cleanBarcode = cleanBarcode.split(" - ")[0].trim();
+    }
+
+    const found = products.find(p => p.name.includes(cleanBarcode));
     if (found) {
       setCurrentItem({ productId: found.id.toString(), quantity: "1", price: found.price.toString() });
       setBarcodeInput(""); setShowModal(true);
     } else {
-      alert(`Barcode: "${barcodeInput}" \nΔεν βρέθηκε!`);
+      alert(`Barcode: "${cleanBarcode}" \nΔεν βρέθηκε!`);
       setBarcodeInput("");
     }
   };
@@ -90,19 +96,15 @@ export default function OrdersPage() {
 
   const handlePrintPDF = (order: any) => {
     const doc = new jsPDF();
-    
-    // 👑 ΚΕΦΑΛΙΔΑ ΤΙΜΟΛΟΓΙΟΥ
     doc.setFont("helvetica", "bold").setFontSize(22).setTextColor(37, 99, 235).text("VNF MARKET", 14, 20);
     doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(100, 116, 139).text("Enterprise Management System", 14, 26);
     doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(30, 41, 59).text(`INVOICE #ORD-${order.id}`, 150, 20);
     
-    // ΣΤΟΙΧΕΙΑ ΠΡΟΜΗΘΕΥΤΗ
     doc.setFont("helvetica", "normal").setFontSize(10).setTextColor(71, 85, 105);
     doc.text(`Supplier: ${order.supplier?.name || `Supplier #\${order.supplierId}`}`, 14, 40);
     doc.text(`Shop Identity: Shop #${shopId}`, 14, 46);
     doc.text(`Date: ${new Date().toLocaleDateString("el-GR")}`, 14, 52);
     
-    // 📊 ΠΙΝΑΚΑΣ ΠΡΟΪΟΝΤΩΝ & ΤΙΜΩΝ
     doc.setDrawColor(226, 232, 240).setFillColor(248, 250, 252).rect(14, 60, 182, 8, "F");
     doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(15, 23, 42);
     doc.text("Product / Item Name", 16, 65);
@@ -127,7 +129,6 @@ export default function OrdersPage() {
       yOffset += 10;
     });
     
-    // 💰 ΤΕΛΙΚΟ ΣΥΝΟΛΟ
     doc.setDrawColor(37, 99, 235).setLineWidth(0.5).line(14, yOffset + 2, 196, yOffset + 2);
     doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(37, 99, 235);
     doc.text("TOTAL ORDER AMOUNT:", 110, yOffset + 10);
@@ -155,18 +156,27 @@ export default function OrdersPage() {
             <tr className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold border-b border-gray-200 dark:border-gray-700">
               <th className="p-3 border-b text-left">ID</th>
               <th className="p-3 border-b text-left">Supplier</th>
+              <th className="p-3 border-b text-left">Items</th> {/* 👑 Η ΝΕΑ ΣΤΗΛΗ ΣΤΟΝ ΠΙΝΑΚΑ */}
               <th className="p-3 border-b text-left">Total</th>
               <th className="p-3 border-b text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="text-black dark:text-white">
             {orders.length === 0 ? (
-              <tr><td colSpan={4} className="p-4 text-center text-gray-400">No orders found for this shop.</td></tr>
+              <tr><td colSpan={5} className="p-4 text-center text-gray-400">No orders found for this shop.</td></tr>
             ) : (
               orders.map(o => (
                 <tr key={o.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors">
                   <td className="p-3 font-mono font-bold">#{o.id}</td>
                   <td className="p-3 font-medium">{o.supplier?.name || `Supplier #${o.supplierId}`}</td>
+                  
+                  {/* 👑 LIVE RENDERING ΤΩΝ ΟΝΟΜΑΤΩΝ ΤΩΝ ΠΡΟΪΟΝΤΩΝ */}
+                  <td className="p-3 text-xs font-semibold text-gray-600 dark:text-gray-400 max-w-[250px] truncate">
+                    {Array.isArray(o.items) && o.items.length > 0 
+                      ? o.items.map((it: any) => `${it.product?.name || `Product #\${it.productId}`} (x${it.quantity})`).join(", ")
+                      : "No items"}
+                  </td>
+
                   <td className="p-3 font-bold text-blue-600 dark:text-blue-400">\${Number(o.total || 0).toFixed(2)}</td>
                   <td className="p-3 text-center flex justify-center gap-2">
                     <button onClick={() => handlePrintPDF(o)} className="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded text-xs font-bold transition-colors cursor-pointer">Print PDF</button>
