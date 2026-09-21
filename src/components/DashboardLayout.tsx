@@ -136,12 +136,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className={`min-h-screen flex flex-col md:flex-row relative transition-colors duration-200 ${
       darkMode ? "bg-gray-900 text-white" : "bg-white text-black"
     }`}>
-      
-      {/* Sidebar */}
+            {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 h-full border-r w-64 p-4 z-50 transition-all duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 md:static md:h-screen md:sticky ${
+        } md:translate-x-0 md:static md:h-screen md:sticky max-w-full ${
           darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-100 border-gray-200 text-black"
         }`}
       >
@@ -180,14 +179,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {open && <div className="fixed inset-0 bg-black/40 z-40 md:hidden" onClick={() => setOpen(false)} />}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 max-w-full w-full overflow-hidden">
         <header className={`border-b p-4 flex items-center justify-between sticky top-0 z-30 transition-colors ${darkMode ? "bg-gray-800 border-gray-700 text-white" : "bg-gray-50 border-gray-200 text-black"}`}>
           <button className={`md:hidden p-2 border rounded shadow-sm ${darkMode ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-200 text-black"}`} onClick={() => setOpen(!open)}>☰</button>
           <h1 className="text-xl font-semibold">{t.dashboard}</h1>
           <div className="w-8 md:hidden" /> 
         </header>
 
-        <main className="flex-1 p-4 md:p-6 overflow-x-auto">{children}</main>
+        {/* 👑 ΔΙΟΡΘΩΘΗΚΕ: Σωστός περιορισμός πλάτους για να μην ξεχειλίζει τίποτα στα κινητά */}
+        <main className="flex-1 p-4 md:p-6 overflow-x-hidden overflow-y-auto w-full max-w-full min-w-0">
+          <div className="w-full max-w-full overflow-x-auto">
+            {children}
+          </div>
+        </main>
         <Footer />
       </div>
     </div>
