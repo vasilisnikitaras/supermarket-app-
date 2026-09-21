@@ -43,13 +43,24 @@ export default function DashboardPage() {
       <h1 className="text-2xl font-bold mb-2">Dashboard / Πίνακας Ελέγχου</h1>
       <p className="text-gray-500 text-sm mb-6">Κεντρική διαχείριση καταστήματος (Shop #{shopId})</p>
       
+      {/* 👑 LIVE CUSTOMER VIEW BUTTON: Πατάς και σε πάει κατευθείαν στο φυλλάδιο χωρίς να γράφεις τίποτα στην μπάρα! */}
+      <div className="mb-6">
+        <a 
+          href={`/public-offers/${shopId}`} 
+          target="_blank" 
+          className="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 px-5 rounded-xl shadow-md transition-colors text-sm cursor-pointer"
+        >
+          📱 Άνοιγμα Ψηφιακού Φυλλαδίου Πελατών (Shop #{shopId})
+        </a>
+      </div>
+
       {loading ? (
         <p className="text-gray-400">Φόρτωση στατιστικών καταστήματος...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="p-4 border rounded-xl bg-blue-600 text-white shadow-sm">
             <p className="text-xs uppercase font-bold opacity-80">Total Revenue</p>
-            <p className="text-2xl font-black mt-1">${stats.revenue.toFixed(2)}</p>
+            <p className="text-2xl font-black mt-1">\${stats.revenue.toFixed(2)}</p>
           </div>
           <div className="p-4 border rounded-xl bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm">
             <p className="text-xs uppercase font-bold text-gray-400">Products</p>
